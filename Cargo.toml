@@ -1,0 +1,13 @@
+[package]
+name = "clex"
+version = "0.1.0"
+authors = ["imtsuki <me@qjx.app>"]
+description = "A C99-compatible lexer written in Rust"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+structopt = "0.3.11"
+clap = "2.33.0"
+anyhow = "1.0.27"
