@@ -7,6 +7,7 @@ pub enum TokenKind {
     Keyword,
     Ident,
     Const,
+    CharConst,
     Literal,
     Punct,
     Whitespace,
@@ -28,11 +29,17 @@ impl fmt::Debug for Token<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            r#"[{:?} {:?} @{:?}]"#,
+            "[{:?}: {:?} @{:?}]",
             self.kind,
             &self.src[self.range.clone()],
             self.range
         )
+    }
+}
+
+impl fmt::Display for Token<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[{:?}: {:?}]", self.kind, &self.src[self.range.clone()],)
     }
 }
 

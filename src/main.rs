@@ -26,11 +26,15 @@ fn main() -> Result<()> {
     let source = SourceFile::open(opt.source)?;
     let mut lexer = Lexer::new(source.src.as_str());
     while let Some(token) = lexer.advance_token() {
-        if token.kind == Whitespace {
-            // continue;
-        }
+        if token.kind == Whitespace { /* continue; */ }
         let pos = source.lookup_line_column(token.range.start);
-        println!("{:?}:{:?}", token, pos);
+        println!(
+            "{} {}:{}:{}",
+            token,
+            source.path.to_str().unwrap(),
+            pos.0,
+            pos.1
+        );
     }
     Ok(())
 }

@@ -14,6 +14,7 @@ impl<'a> Lexer<'a> {
 
     pub fn advance_token(&mut self) -> Option<Token> {
         let initial_cursor = self.cursor;
+
         let first_char = self.bump_char()?;
 
         let token_kind = match first_char {
