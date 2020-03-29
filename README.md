@@ -13,3 +13,17 @@ FLAGS:
 ARGS:
     <source>    The source code file
 ```
+
+## How to run
+
+First, install the Rust toolchain:
+
+```bash
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
+
+Then just run the following command:
+
+```bash
+cd clex && cargo run -- test/test.c
+```
