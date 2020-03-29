@@ -2,13 +2,16 @@ use anyhow::Result;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+#[cfg(test)]
+#[macro_use]
+mod test_utils;
+
 mod lexer;
 mod source;
 mod token;
 
 use lexer::Lexer;
 use source::SourceFile;
-use token::*;
 
 #[derive(StructOpt, Debug)]
 #[structopt(
@@ -24,10 +27,9 @@ struct Opt {
 fn main() -> Result<()> {
     let opt = Opt::from_args();
     let source = SourceFile::open(opt.source)?;
-    let mut lexer = Lexer::new(source.src.as_str());
-    while let Some(token) = lexer.advance_token() {
-        if token.kind == Whitespace { /* continue; */ }
-        let pos = source.lookup_line_column(token.range.start);
+    let lexer = Lexer::new(source.src.as_str());
+    for token in lexer.iter() {
+        let pos = source.lookup_line_column(token.char_range.start);
         println!(
             "{} {}:{}:{}",
             token,

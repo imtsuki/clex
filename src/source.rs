@@ -28,12 +28,25 @@ impl SourceFile {
         })
     }
 
-    pub fn analyze_lines(_src: &str) -> Vec<usize> {
-        Vec::new()
+    pub fn analyze_lines(src: &str) -> Vec<usize> {
+        let mut lines = vec![0];
+        lines.extend(src.chars().enumerate().filter_map(|(i, c)| {
+            if c == '\n' {
+                Some(i + 1)
+            } else {
+                None
+            }
+        }));
+        lines
     }
 
-    /// Returns the index of the line into `lines`.
-    pub fn lookup_line_column(&self, _pos: usize) -> (usize, usize) {
-        (0, 0)
+    /// Returns the line and column position corresponding to the given `char_pos`.
+    pub fn lookup_line_column(&self, char_pos: usize) -> (usize, usize) {
+        let line = self
+            .lines
+            .binary_search(&char_pos)
+            .map_or_else(|e| e - 1, |t| t);
+        let column = char_pos - self.lines[line];
+        (line, column)
     }
 }
