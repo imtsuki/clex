@@ -1,3 +1,4 @@
+use ansi_term::Color::{Red, White};
 use anyhow::Result;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -12,6 +13,7 @@ mod token;
 
 use lexer::Lexer;
 use source::SourceFile;
+use token::*;
 
 #[derive(StructOpt, Debug)]
 #[structopt(
@@ -26,17 +28,36 @@ struct Opt {
 
 fn main() -> Result<()> {
     let opt = Opt::from_args();
+
+    #[cfg(windows)]
+    let _ = ansi_term::enable_ansi_support();
+
     let source = SourceFile::open(opt.source)?;
     let lexer = Lexer::new(source.src.as_str());
     for token in lexer.iter() {
-        let pos = source.lookup_line_column(token.char_range.start);
-        println!(
-            "{} {}:{}:{}",
-            token,
-            source.path.to_str().unwrap(),
-            pos.0,
-            pos.1
-        );
+        let (line, column) = source.lookup_line_column(token.char_range.start);
+        if let Error(error_kind) = token.kind {
+            println!(
+                "{} {} {}",
+                White.bold().paint(format!(
+                    "{}:{}:{}:",
+                    source.path.to_str().unwrap(),
+                    line + 1,
+                    column + 1,
+                )),
+                Red.bold().paint("error:"),
+                White.bold().paint(format!("{:?}", error_kind))
+            );
+            source.display_error_hint(&token);
+        } else {
+            println!(
+                "{}:{}:{}: {}",
+                source.path.to_str().unwrap(),
+                line + 1,
+                column + 1,
+                token,
+            );
+        }
     }
     Ok(())
 }

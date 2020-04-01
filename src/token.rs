@@ -15,7 +15,6 @@ pub enum TokenKind {
     /* preprocessing-token */
     /* lexer internal tokens */
     Whitespace,
-    Unknown,
     Error(ErrorKind),
 }
 
@@ -30,6 +29,7 @@ pub enum ErrorKind {
     UnterminatedString,
     UnterminatedChar,
     UnknownPunctuator,
+    UnexpectedCharacter,
 }
 
 /// Instead of storing the actual token content, `Token` stores

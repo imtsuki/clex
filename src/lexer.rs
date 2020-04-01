@@ -36,7 +36,7 @@ impl<'a> Lexer<'a> {
             '"' => self.string_literal(),
             '\'' => self.char_const(),
             symbol if symbol.is_ascii_punctuation() => self.punct(symbol),
-            _ => Unknown,
+            _ => Error(UnexpectedCharacter),
         };
 
         Some(Token::new(
@@ -333,6 +333,7 @@ Some(
 ]"#
         );
     }
+
     #[test]
     fn test_char_consts() {
         let tokens: Vec<Token> = Lexer::new(r"'a' '\\' '\n'").iter().collect();
