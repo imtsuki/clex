@@ -80,8 +80,7 @@ impl SourceFile {
                     "{} {:?}",
                     std::iter::repeat('^')
                         .take(token_display_width)
-                        .collect::<String>()
-                        .as_str(),
+                        .collect::<String>(),
                     error_kind
                 ))
             );

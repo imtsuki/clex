@@ -20,7 +20,8 @@ pub enum TokenKind {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ConstKind {
-    Number,
+    Float,
+    Integer,
     Char,
 }
 
@@ -30,6 +31,10 @@ pub enum ErrorKind {
     UnterminatedChar,
     UnknownPunctuator,
     UnexpectedCharacter,
+    InvalidIntegerSuffix,
+    InvalidFloatingSuffix,
+    #[allow(unused)]
+    Unknown,
 }
 
 /// Instead of storing the actual token content, `Token` stores

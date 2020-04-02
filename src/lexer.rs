@@ -31,10 +31,19 @@ impl<'a> Lexer<'a> {
 
         let token_kind = match first_char {
             c if c.is_whitespace() => self.whitespace(),
-            '_' | 'a'..='z' | 'A'..='Z' => self.ident_or_keyword(initial_byte_cursor),
-            digit @ '0'..='9' => self.number(digit),
+            'L' if self.peek_char(0) == '"' => {
+                self.bump_char();
+                self.string_literal()
+            }
+            'L' if self.peek_char(0) == '\'' => {
+                self.bump_char();
+                self.char_const()
+            }
             '"' => self.string_literal(),
             '\'' => self.char_const(),
+            '_' | 'a'..='z' | 'A'..='Z' => self.ident_or_keyword(initial_byte_cursor),
+            digit if digit.is_ascii_digit() => self.number(digit),
+            '.' if self.peek_char(0).is_ascii_digit() => self.number('.'),
             symbol if symbol.is_ascii_punctuation() => self.punct(symbol),
             _ => Error(UnexpectedCharacter),
         };
@@ -102,9 +111,18 @@ impl<'a> Lexer<'a> {
     }
 
     fn number(&mut self, first_digit: char) -> TokenKind {
-        self.eat_number_constant(first_digit);
-        self.eat_number_suffix();
-        Const(Number)
+        match first_digit {
+            '0' => match self.peek_char(0) {
+                'x' | 'X' => {
+                    self.bump_char();
+                    self.eat_hexadecimal_constant()
+                }
+                '0'..='7' => self.eat_octal_constant(),
+                '.' | 'e' | 'E' | 'u' | 'U' | 'l' | 'L' => self.eat_decimal_constant(),
+                _ => Const(Integer),
+            },
+            _ => self.eat_decimal_constant(),
+        }
     }
 
     fn punct(&mut self, first_symbol: char) -> TokenKind {
@@ -211,26 +229,78 @@ impl<'a> Lexer<'a> {
         }
     }
 
-    fn eat_number_constant(&mut self, first_digit: char) {
-        if first_digit == '0' {
-            match self.peek_char(0) {
-                'x' | 'X' => {
-                    self.bump_char();
-                    self.eat_hexadecimal_digits();
-                }
-                '0'..='7' => {
-                    self.eat_octal_digits();
-                }
-                '.' => { /* TODO */ }
-                _ => return,
+    fn eat_decimal_constant(&mut self) -> TokenKind {
+        self.eat_decimal_digits();
+        match self.peek_char(0) {
+            '.' | 'e' | 'E' => self.eat_floating_constant(),
+            _ => match self.eat_integer_suffix() {
+                true => Const(Integer),
+                false => Error(InvalidIntegerSuffix),
+            },
+        }
+    }
+
+    fn eat_floating_constant(&mut self) -> TokenKind {
+        if let '.' = self.peek_char(0) {
+            self.bump_char();
+            self.eat_decimal_digits();
+        }
+        if let 'e' | 'E' = self.peek_char(0) {
+            self.eat_exponent_part();
+        }
+        match self.eat_floating_suffix() {
+            true => Const(Float),
+            false => Error(InvalidFloatingSuffix),
+        }
+    }
+
+    fn eat_exponent_part(&mut self) {
+        if let 'e' | 'E' = self.peek_char(0) {
+            self.bump_char();
+            if let '+' | '-' = self.peek_char(0) {
+                self.bump_char();
             }
-        } else {
             self.eat_decimal_digits();
         }
     }
 
-    fn eat_number_suffix(&mut self) {
-        /* TODO */
+    fn eat_hexadecimal_constant(&mut self) -> TokenKind {
+        self.eat_hexadecimal_digits();
+        match self.eat_integer_suffix() {
+            true => Const(Integer),
+            false => Error(InvalidIntegerSuffix),
+        }
+    }
+
+    fn eat_octal_constant(&mut self) -> TokenKind {
+        self.eat_octal_digits();
+        match self.eat_integer_suffix() {
+            true => Const(Integer),
+            false => Error(InvalidIntegerSuffix),
+        }
+    }
+
+    fn eat_floating_suffix(&mut self) -> bool {
+        let suffix_begin = self.byte_cursor;
+        self.eat_ident_or_keyword();
+        match &self.src[suffix_begin..self.byte_cursor] {
+            "" => true,
+            "f" | "F" | "l" | "L" => true,
+            _ => false,
+        }
+    }
+    fn eat_integer_suffix(&mut self) -> bool {
+        let suffix_begin = self.byte_cursor;
+        self.eat_ident_or_keyword();
+        match &self.src[suffix_begin..self.byte_cursor] {
+            "" => true,
+            "u" | "U" | "l" | "L" | "ll" | "LL" => true,
+            "ul" | "uL" | "Ul" | "UL" => true,
+            "lu" | "Lu" | "lU" | "LU" => true,
+            "ull" | "uLL" | "Ull" | "ULL" => true,
+            "llu" | "LLu" | "llU" | "LLU" => true,
+            _ => false,
+        }
     }
 
     fn eat_decimal_digits(&mut self) -> bool {

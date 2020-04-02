@@ -1,0 +1,11 @@
+success:
+    100
+    100.
+    .251e+3f
+    0x1af
+    100ull
+    123e1
+error:
+    123f
+    .251e+3u
+    100uaa
