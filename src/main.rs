@@ -1,5 +1,4 @@
 use anyhow::Result;
-use std::fmt;
 use std::io::Write;
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -14,10 +13,12 @@ mod test_utils;
 
 mod lexer;
 mod source;
+mod stats;
 mod token;
 
 use lexer::Lexer;
 use source::SourceFile;
+use stats::Statistics;
 use token::*;
 
 #[derive(StructOpt, Debug)]
@@ -65,7 +66,6 @@ fn main() -> Result<()> {
                 token,
             );
         }
-
         stats.track(&token);
     }
 
@@ -77,46 +77,4 @@ fn main() -> Result<()> {
 
     println!("\nStatistics: \n{}", stats);
     Ok(())
-}
-
-#[derive(Debug, Default)]
-struct Statistics {
-    keywords: u32,
-    idents: u32,
-    floats: u32,
-    ints: u32,
-    chars: u32,
-    strs: u32,
-    puncts: u32,
-    errors: u32,
-}
-
-impl Statistics {
-    fn track(&mut self, token: &Token) {
-        match token.kind {
-            Keyword => self.keywords += 1,
-            Ident => self.idents += 1,
-            Const(Float) => self.floats += 1,
-            Const(Integer) => self.ints += 1,
-            Const(Char) => self.chars += 1,
-            StrLit => self.strs += 1,
-            Punct => self.puncts += 1,
-            Error(_) => self.errors += 1,
-            _ => (),
-        }
-    }
-}
-
-impl fmt::Display for Statistics {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "   Keywords: {}", self.keywords)?;
-        writeln!(f, "   Identifiers: {}", self.idents)?;
-        writeln!(f, "   Floating constants: {}", self.floats)?;
-        writeln!(f, "   Integer constants: {}", self.ints)?;
-        writeln!(f, "   Char constants: {}", self.chars)?;
-        writeln!(f, "   String literals: {}", self.strs)?;
-        writeln!(f, "   Punctuators: {}", self.puncts)?;
-        writeln!(f, "   Errors: {}", self.errors)?;
-        Ok(())
-    }
 }

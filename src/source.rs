@@ -23,6 +23,12 @@ impl SourceFile {
     pub fn open(path: PathBuf) -> Result<Self> {
         let mut buf = String::new();
         File::open(&path)?.read_to_string(&mut buf)?;
+
+        // Remove UTF-8 BOM, if any.
+        if buf.starts_with("\u{feff}") {
+            buf.drain(..3);
+        }
+        // Append \n if necessary.
         if !buf.ends_with("\n") {
             buf.push_str("\n");
         }
@@ -34,6 +40,7 @@ impl SourceFile {
         })
     }
 
+    /// Find out all line breaks.
     pub fn analyze_lines(src: &str) -> Vec<usize> {
         let mut lines = vec![0];
         lines.extend(src.chars().enumerate().filter_map(|(i, c)| {
