@@ -6,14 +6,13 @@ pub use TokenKind::*;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TokenKind {
-    /* token */
+    /* tokens */
     Keyword,
     Ident,
     Const(ConstKind),
     StrLit,
     Punct,
-    /* preprocessing-token */
-    /* lexer internal tokens */
+    /* compiler internal tokens */
     Whitespace,
     Error(ErrorKind),
 }
@@ -41,6 +40,10 @@ pub enum ErrorKind {
 /// the text range of it and maintains a reference to the source str.
 ///
 /// By doing so, we can avoid additional heap allocations.
+///
+/// Note that we have two ranges: one is byte-based, corresponding to
+/// the original UTF-8 byte sequence; the other is char-based, mainly
+/// for human-readable text ranges.
 #[derive(Clone, PartialEq, Eq)]
 pub struct Token<'a> {
     pub kind: TokenKind,

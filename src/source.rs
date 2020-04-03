@@ -1,12 +1,12 @@
 //! This module contains source-file-related functionality.
 
 use crate::token::*;
-use ansi_term::Color::Red;
 use anyhow::Result;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
 use std::rc::Rc;
+use termcolor::{Color::Green, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 #[derive(Clone)]
@@ -23,6 +23,12 @@ impl SourceFile {
     pub fn open(path: PathBuf) -> Result<Self> {
         let mut buf = String::new();
         File::open(&path)?.read_to_string(&mut buf)?;
+
+        // Remove UTF-8 BOM, if any.
+        if buf.starts_with("\u{feff}") {
+            buf.drain(..3);
+        }
+        // Append \n if necessary.
         if !buf.ends_with("\n") {
             buf.push_str("\n");
         }
@@ -34,6 +40,7 @@ impl SourceFile {
         })
     }
 
+    /// Find out all line breaks.
     pub fn analyze_lines(src: &str) -> Vec<usize> {
         let mut lines = vec![0];
         lines.extend(src.chars().enumerate().filter_map(|(i, c)| {
@@ -62,28 +69,34 @@ impl SourceFile {
         self.src.chars().skip(start).take(end - start - 1).collect()
     }
 
-    pub fn display_error_hint(&self, token: &Token) {
+    pub fn display_error_hint(&self, token: &Token) -> Result<()> {
         if let Error(error_kind) = token.kind {
-            let (line, column) = self.lookup_line_column(token.char_range.start);
+            let mut stderr = StandardStream::stderr(ColorChoice::Auto);
 
+            let (line, column) = self.lookup_line_column(token.char_range.start);
             let line_src = self.get_line(line);
-            println!("{}", line_src);
+            writeln!(&mut stderr, "{}", line_src)?;
+
             let leading_spaces = line_src.chars().take(column).fold(0, |acc, c| {
                 acc + UnicodeWidthChar::width(c).unwrap_or_default()
             });
-            print!("{: <1$}", "", leading_spaces);
+            write!(&mut stderr, "{: <1$}", "", leading_spaces)?;
+
             let token_display_width =
                 UnicodeWidthStr::width(&self.src.as_str()[token.byte_range.clone()]);
-            println!(
-                "{}",
-                Red.bold().paint(format!(
-                    "{} {:?}",
-                    std::iter::repeat('^')
-                        .take(token_display_width)
-                        .collect::<String>(),
-                    error_kind
-                ))
-            );
+
+            stderr.set_color(ColorSpec::new().set_fg(Some(Green)).set_bold(true))?;
+            writeln!(
+                &mut stderr,
+                "{} {:?}",
+                std::iter::repeat('^')
+                    .take(token_display_width)
+                    .collect::<String>(),
+                error_kind
+            )?;
+
+            stderr.reset()?;
         }
+        Ok(())
     }
 }
