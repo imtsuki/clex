@@ -21,8 +21,12 @@ jobs:
           override: true
       - name: Build
         run: cargo build --release
+      - name: Move items
+        run: |
+          mkdir dist
+          cp ./target/release/clex* dist/
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
         with:
           name: dist-${{ matrix.os }}
-          path: ./target/release/clex*
+          path: ./dist
