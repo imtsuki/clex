@@ -26,6 +26,12 @@ jobs:
         if: matrix.os != 'ubuntu-latest'
         run: cargo build --release
       - name: Move items
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          mkdir dist
+          cp ./target/x86_64-unknown-linux-musl/release/clex* dist/
+      - name: Move items
+        if: matrix.os != 'ubuntu-latest'
         run: |
           mkdir dist
           cp ./target/release/clex* dist/
