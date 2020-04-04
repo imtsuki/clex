@@ -13,6 +13,7 @@ pub enum TokenKind {
     StrLit,
     Punct,
     /* compiler internal tokens */
+    Comment,
     Whitespace,
     Error(ErrorKind),
 }
@@ -26,12 +27,14 @@ pub enum ConstKind {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ErrorKind {
+    UnclosedBlockComment,
     UnterminatedString,
     UnterminatedChar,
     UnknownPunctuator,
     UnexpectedCharacter,
     InvalidIntegerSuffix,
     InvalidFloatingSuffix,
+    NoHexadecimalDigits,
     #[allow(unused)]
     Unknown,
 }

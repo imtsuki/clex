@@ -6,7 +6,6 @@ pub struct Lexer<'a> {
     src: &'a str,
     byte_cursor: usize,
     char_cursor: usize,
-    prev: char,
 }
 
 impl<'a> Lexer<'a> {
@@ -15,12 +14,12 @@ impl<'a> Lexer<'a> {
             src,
             byte_cursor: 0,
             char_cursor: 0,
-            prev: EOF,
         }
     }
 
     pub fn iter(mut self) -> impl Iterator<Item = Token<'a>> {
-        std::iter::from_fn(move || self.advance_token()).filter(|token| token.kind != Whitespace)
+        std::iter::from_fn(move || self.advance_token())
+            .filter(|token| token.kind != Whitespace && token.kind != Comment)
     }
 
     pub fn advance_token(&mut self) -> Option<Token<'a>> {
@@ -31,6 +30,8 @@ impl<'a> Lexer<'a> {
 
         let token_kind = match first_char {
             c if c.is_whitespace() => self.whitespace(),
+            '/' if self.peek_char(0) == '/' => self.line_comment(),
+            '/' if self.peek_char(0) == '*' => self.block_comment(),
             'L' if self.peek_char(0) == '"' => {
                 self.bump_char();
                 self.string_literal()
@@ -59,6 +60,31 @@ impl<'a> Lexer<'a> {
     fn whitespace(&mut self) -> TokenKind {
         self.eat_whitespace();
         Whitespace
+    }
+
+    fn line_comment(&mut self) -> TokenKind {
+        self.bump_char();
+        while self.peek_char(0) != '\n' && self.peek_char(0) != EOF {
+            self.bump_char();
+        }
+        Comment
+    }
+
+    fn block_comment(&mut self) -> TokenKind {
+        self.bump_char();
+        let mut closed = false;
+        while let Some(c) = self.bump_char() {
+            if c == '*' && self.peek_char(0) == '/' {
+                self.bump_char();
+                closed = true;
+                break;
+            }
+        }
+
+        match closed {
+            true => Comment,
+            false => Error(UnclosedBlockComment),
+        }
     }
 
     fn ident_or_keyword(&mut self, initial_byte_cursor: usize) -> TokenKind {
@@ -265,7 +291,10 @@ impl<'a> Lexer<'a> {
     }
 
     fn eat_hexadecimal_constant(&mut self) -> TokenKind {
-        self.eat_hexadecimal_digits();
+        let has_digits = self.eat_hexadecimal_digits();
+        if !has_digits {
+            return Error(NoHexadecimalDigits);
+        }
         match self.eat_integer_suffix() {
             true => Const(Integer),
             false => Error(InvalidIntegerSuffix),
@@ -340,7 +369,6 @@ impl<'a> Lexer<'a> {
         let c = chars.next()?;
         self.byte_cursor += self.remaining().len() - chars.as_str().len();
         self.char_cursor += 1;
-        self.prev = c;
         Some(c)
     }
 

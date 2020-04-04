@@ -35,9 +35,8 @@ struct Opt {
 fn main() -> Result<()> {
     let opt = Opt::from_args();
 
-    let mut stats = Statistics::default();
-
     let source = SourceFile::open(opt.source)?;
+    let mut stats = Statistics::new(&source);
     let lexer = Lexer::new(source.src.as_str());
     for token in lexer.iter() {
         let (line, column) = source.lookup_line_column(token.char_range.start);
